@@ -196,7 +196,10 @@ public class ItemNameplateRenderer {
         if (source.joinSeparator() != null) {
             text = source.joinPrepend() + String.join(source.joinSeparator(), values) + source.joinAppend();
         } else {
-            text = values[0];
+            text = source.joinPrepend() + values[0] + source.joinAppend();
+        }
+        for (var replacement : source.replacements().entrySet()) {
+            text = text.replace(replacement.getKey(), replacement.getValue());
         }
         return source.i18n() ? Component.translatable(text).getString() : text;
     }

@@ -43,12 +43,9 @@ public class Config {
                   "text_source": {
                     "type": "nbt",
                     "path": "StoredEnchantments[0].id",
-                    "split": {
-                      "separator": ":"
-                    },
-                    "join": {
-                      "separator": ".",
-                      "prepend": "enchantment."
+                    "prepend": "enchantment.",
+                    "replace": {
+                      ":": "."
                     },
                     "i18n": true
                   },
@@ -278,7 +275,7 @@ public class Config {
                 }
 
                 String joinSeparator = null;
-                String joinPrepend = "";
+                String joinPrepend = source.has("prepend") ? source.get("prepend").getAsString() : "";
                 String joinAppend = "";
                 if (source.has("join")) {
                         if (!source.get("join").isJsonObject() || !source.getAsJsonObject("join").has("separator") || !source.getAsJsonObject("join").get("separator").isJsonPrimitive()) {
@@ -288,8 +285,17 @@ public class Config {
                         }
                         JsonObject join = source.getAsJsonObject("join");
                         joinSeparator = join.get("separator").getAsString();
-                        joinPrepend = join.has("prepend") ? join.get("prepend").getAsString() : "";
+                        joinPrepend += join.has("prepend") ? join.get("prepend").getAsString() : "";
                         joinAppend = join.has("append") ? join.get("append").getAsString() : "";
+                }
+
+                Map<String, String> sourceReplacements = new LinkedHashMap<>();
+                if (source.has("replace") && source.get("replace").isJsonObject()) {
+                    for (Map.Entry<String, JsonElement> replacement : source.getAsJsonObject("replace").entrySet()) {
+                        if (!replacement.getKey().isEmpty() && replacement.getValue().isJsonPrimitive()) {
+                            sourceReplacements.put(replacement.getKey(), replacement.getValue().getAsString());
+                        }
+                    }
                 }
 
                 List<String> removeText = new ArrayList<>();
@@ -300,16 +306,16 @@ public class Config {
                         }
                     }
                 }
-                Map<String, String> sourceReplacements = new LinkedHashMap<>();
+                Map<String, String> ruleReplacements = new LinkedHashMap<>();
                 if (entry.has("replace") && entry.get("replace").isJsonObject()) {
                     for (Map.Entry<String, JsonElement> replacement : entry.getAsJsonObject("replace").entrySet()) {
                         if (!replacement.getKey().isEmpty() && replacement.getValue().isJsonPrimitive()) {
-                            sourceReplacements.put(replacement.getKey(), replacement.getValue().getAsString());
+                            ruleReplacements.put(replacement.getKey(), replacement.getValue().getAsString());
                         }
                     }
                 }
                 boolean i18n = source.has("i18n") && source.get("i18n").getAsBoolean();
-                TextSource textSource = new TextSource(sourceType, path, splitSeparator, splitIndex, joinSeparator, joinPrepend, joinAppend, i18n);
+                TextSource textSource = new TextSource(sourceType, path, splitSeparator, splitIndex, joinSeparator, joinPrepend, joinAppend, sourceReplacements, i18n);
 
                 int priority = entry.has("priority") ? entry.get("priority").getAsInt() : 0;
                 int maxLength = entry.has("max_length") ? entry.get("max_length").getAsInt() : -1;
@@ -318,7 +324,7 @@ public class Config {
                     order++;
                     continue;
                 }
-                loadedRules.add(new NameplateRule(targetItem, targetTag, targetClass, textSource, removeText, sourceReplacements, priority, order, maxLength));
+                loadedRules.add(new NameplateRule(targetItem, targetTag, targetClass, textSource, removeText, ruleReplacements, priority, order, maxLength));
                 order++;
             }
 
@@ -377,6 +383,6 @@ public class Config {
     public record NbtPathPart(String key, Integer index) {
     }
 
-    public record TextSource(String type, List<NbtPathPart> path, String splitSeparator, Integer splitIndex, String joinSeparator, String joinPrepend, String joinAppend, boolean i18n) {
+    public record TextSource(String type, List<NbtPathPart> path, String splitSeparator, Integer splitIndex, String joinSeparator, String joinPrepend, String joinAppend, Map<String, String> replacements, boolean i18n) {
     }
 }
