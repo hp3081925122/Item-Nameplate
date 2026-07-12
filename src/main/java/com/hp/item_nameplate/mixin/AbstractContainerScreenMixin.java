@@ -10,8 +10,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(AbstractContainerScreen.class)
 public class AbstractContainerScreenMixin {
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;renderTooltip(Lnet/minecraft/client/gui/GuiGraphics;II)V", shift = At.Shift.BEFORE))
-    private void itemNameplate$renderBeforeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo callbackInfo) {
+    // 在原版提示框绘制前渲染名称牌，确保其位于物品材质之上、提示框之下。
+    @Inject(method = "renderTooltip", at = @At("HEAD"))
+    private void itemNameplate$renderBeforeTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY, CallbackInfo callbackInfo) {
         ItemNameplateRenderer.renderContainerLabels((AbstractContainerScreen<?>) (Object) this, guiGraphics);
     }
 }
