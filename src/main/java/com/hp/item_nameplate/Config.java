@@ -49,64 +49,107 @@ public class Config {
                     },
                     "i18n": true
                   },
-                  "priority": 20,
-                  "max_length": 3
+                  "priority": 20
                 },
                 {
-                  "desc": "所有继承 SpawnEggItem 的刷怪蛋示例",
+                  "desc": "原版刷怪蛋：兼容简体中文和英文名称",
                   "target": {
                     "type": "class",
                     "value": "net.minecraft.world.item.SpawnEggItem"
                   },
                   "text_source": { "type": "item_name" },
-                  "remove_text": ["刷怪蛋"],
-                  "priority": 10,
-                  "max_length": 3
+                  "remove_text": ["刷怪蛋", " Spawn Egg"],
+                  "priority": 10
                 },
                 {
-                  "desc": "原版普通药水示例：删除剂型文字并缩写常用效果名称",
+                  "desc": "原版普通药水：兼容简体中文和英文名称",
                   "target": {
                     "type": "item",
                     "value": "minecraft:potion"
                   },
                   "text_source": { "type": "item_name" },
-                  "remove_text": ["药水", "喷溅型", "滞留型"],
+                  "remove_text": ["Potion of ", " Potion", "药水"],
                   "replace": {
                     "瞬间治疗": "治疗",
-                    "瞬间伤害": "伤害"
+                    "瞬间伤害": "伤害",
+                    "Instant Health": "Healing",
+                    "Instant Damage": "Harming"
                   },
-                  "priority": 10,
-                  "max_length": 3
+                  "priority": 10
                 },
                 {
-                  "desc": "原版喷溅型药水示例",
+                  "desc": "原版喷溅型药水：兼容简体中文和英文名称",
                   "target": {
                     "type": "item",
                     "value": "minecraft:splash_potion"
                   },
                   "text_source": { "type": "item_name" },
-                  "remove_text": ["药水", "喷溅型", "滞留型"],
+                  "remove_text": ["Splash Potion of ", "Splash ", " Potion", "喷溅型", "药水"],
                   "replace": {
                     "瞬间治疗": "治疗",
-                    "瞬间伤害": "伤害"
+                    "瞬间伤害": "伤害",
+                    "Instant Health": "Healing",
+                    "Instant Damage": "Harming"
                   },
-                  "priority": 10,
-                  "max_length": 3
+                  "priority": 10
                 },
                 {
-                  "desc": "原版滞留型药水示例",
+                  "desc": "原版滞留型药水：兼容简体中文和英文名称",
                   "target": {
                     "type": "item",
                     "value": "minecraft:lingering_potion"
                   },
                   "text_source": { "type": "item_name" },
-                  "remove_text": ["药水", "喷溅型", "滞留型"],
+                  "remove_text": ["Lingering Potion of ", "Lingering ", " Potion", "滞留型", "药水"],
                   "replace": {
                     "瞬间治疗": "治疗",
-                    "瞬间伤害": "伤害"
+                    "瞬间伤害": "伤害",
+                    "Instant Health": "Healing",
+                    "Instant Damage": "Harming"
                   },
-                  "priority": 10,
-                  "max_length": 3
+                  "priority": 10
+                },
+                {
+                  "desc": "锻造升级模板：从提示框读取具体模板名称",
+                  "target": {
+                    "type": "tag",
+                    "value": "item_nameplate:smithing_templates"
+                  },
+                  "text_source": {
+                    "type": "tooltip",
+                    "index": 1
+                  },
+                  "remove_text": ["升级", " Upgrade"],
+                  "priority": 10
+                },
+                {
+                  "desc": "盔甲纹饰锻造模板：从提示框读取具体纹饰名称",
+                  "target": {
+                    "type": "tag",
+                    "value": "minecraft:trim_templates"
+                  },
+                  "text_source": {
+                    "type": "tooltip",
+                    "index": 1
+                  },
+                  "remove_text": ["盔甲纹饰", " Armor Trim"],
+                  "priority": 10
+                },
+                {
+                  "desc": "原版药水箭：兼容简体中文和英文名称",
+                  "target": {
+                    "type": "item",
+                    "value": "minecraft:tipped_arrow"
+                  },
+                  "text_source": { "type": "item_name" },
+                  "remove_text": ["Arrow of ", " Tipped Arrow", "之箭", "药箭"],
+                  "replace": {
+                    "瞬间治疗": "治疗",
+                    "瞬间伤害": "伤害",
+                    "Instant Health": "Healing",
+                    "Instant Damage": "Harming"
+                  },
+                  "priority": 10
                 }
               ]
             }
@@ -125,13 +168,6 @@ public class Config {
         enabled = ENABLED.get();
         labelScale = LABEL_SCALE.get();
         loadNameplateRules();
-    }
-
-    public static String getRenderReason(Item item) {
-        if (getNameplateRule(item).isPresent()) {
-            return "JSON名称牌规则";
-        }
-        return null;
     }
 
     public static Optional<NameplateRule> getNameplateRule(Item item) {
@@ -230,6 +266,7 @@ public class Config {
 
                 String sourceType = source.get("type").getAsString();
                 List<NbtPathPart> path = List.of();
+                Integer tooltipIndex = null;
                 if (sourceType.equals("nbt")) {
                     if (!source.has("path") || !source.get("path").isJsonPrimitive()) {
                         LOGGER.warn("Skipped nameplate rule at index {} because NBT text_source.path is required", order);
@@ -242,7 +279,18 @@ public class Config {
                         order++;
                         continue;
                     }
-
+                } else if (sourceType.equals("tooltip")) {
+                    if (!source.has("index") || !source.get("index").isJsonPrimitive()) {
+                        LOGGER.warn("Skipped nameplate rule at index {} because tooltip text_source.index is required", order);
+                        order++;
+                        continue;
+                    }
+                    tooltipIndex = source.get("index").getAsInt();
+                    if (tooltipIndex < 0) {
+                        LOGGER.warn("Skipped nameplate rule at index {} because tooltip text_source.index cannot be negative", order);
+                        order++;
+                        continue;
+                    }
                 } else if (!sourceType.equals("item_name")) {
                     LOGGER.warn("Skipped nameplate rule at index {} because text_source.type {} is unsupported", order, sourceType);
                     order++;
@@ -315,16 +363,10 @@ public class Config {
                     }
                 }
                 boolean i18n = source.has("i18n") && source.get("i18n").getAsBoolean();
-                TextSource textSource = new TextSource(sourceType, path, splitSeparator, splitIndex, joinSeparator, joinPrepend, joinAppend, sourceReplacements, i18n);
+                TextSource textSource = new TextSource(sourceType, path, tooltipIndex, splitSeparator, splitIndex, joinSeparator, joinPrepend, joinAppend, sourceReplacements, i18n);
 
                 int priority = entry.has("priority") ? entry.get("priority").getAsInt() : 0;
-                int maxLength = entry.has("max_length") ? entry.get("max_length").getAsInt() : -1;
-                if (maxLength == 0 || maxLength < -1) {
-                    LOGGER.warn("Skipped nameplate rule at index {} because max_length must be positive", order);
-                    order++;
-                    continue;
-                }
-                loadedRules.add(new NameplateRule(targetItem, targetTag, targetClass, textSource, removeText, ruleReplacements, priority, order, maxLength));
+                loadedRules.add(new NameplateRule(targetItem, targetTag, targetClass, textSource, removeText, ruleReplacements, priority, order));
                 order++;
             }
 
@@ -333,7 +375,6 @@ public class Config {
                 return priorityComparison != 0 ? priorityComparison : Integer.compare(first.order(), second.order());
             });
             nameplateRules = List.copyOf(loadedRules);
-            LOGGER.info("Loaded {} nameplate rules from {}", nameplateRules.size(), RULES_PATH);
         } catch (IOException | IllegalStateException exception) {
             LOGGER.error("Failed to load nameplate rules from {}", RULES_PATH, exception);
             nameplateRules = List.of();
@@ -368,7 +409,7 @@ public class Config {
         return List.copyOf(parts);
     }
 
-    public record NameplateRule(Item item, TagKey<Item> tag, Class<? extends Item> itemClass, TextSource textSource, List<String> removeText, Map<String, String> replacements, int priority, int order, int maxLength) {
+    public record NameplateRule(Item item, TagKey<Item> tag, Class<? extends Item> itemClass, TextSource textSource, List<String> removeText, Map<String, String> replacements, int priority, int order) {
         public boolean matches(Item candidate) {
             if (item != null) {
                 return item == candidate;
@@ -383,6 +424,6 @@ public class Config {
     public record NbtPathPart(String key, Integer index) {
     }
 
-    public record TextSource(String type, List<NbtPathPart> path, String splitSeparator, Integer splitIndex, String joinSeparator, String joinPrepend, String joinAppend, Map<String, String> replacements, boolean i18n) {
+    public record TextSource(String type, List<NbtPathPart> path, Integer tooltipIndex, String splitSeparator, Integer splitIndex, String joinSeparator, String joinPrepend, String joinAppend, Map<String, String> replacements, boolean i18n) {
     }
 }
