@@ -123,6 +123,19 @@ public class Config {
                   "priority": 10
                 },
                 {
+                  "desc": "所有锻造模板：从提示框读取具体模板名称",
+                  "target": {
+                    "type": "class",
+                    "value": "net.minecraft.world.item.SmithingTemplateItem"
+                  },
+                  "text_source": {
+                    "type": "tooltip",
+                    "index": 1
+                  },
+                  "remove_text": ["升级", " Upgrade", "盔甲纹饰", " Armor Trim"],
+                  "priority": 9
+                },
+                {
                   "desc": "盔甲纹饰锻造模板：从提示框读取具体纹饰名称",
                   "target": {
                     "type": "tag",
@@ -251,7 +264,6 @@ public class Config {
                     order++;
                     continue;
                 }
-
                 if (!entry.has("text_source") || !entry.get("text_source").isJsonObject()) {
                     LOGGER.warn("Skipped nameplate rule at index {} because text_source is required", order);
                     order++;
