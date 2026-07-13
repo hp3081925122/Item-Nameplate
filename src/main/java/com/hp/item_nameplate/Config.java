@@ -5,15 +5,16 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -26,23 +27,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@Mod.EventBusSubscriber(modid = Item_nameplate.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
-    private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
+    private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Path RULES_PATH = FMLPaths.CONFIGDIR.get().resolve("item_nameplate_rules.json");
     private static final String DEFAULT_RULES = """
             {
               "entries": [
                 {
-                  "desc": "原版附魔书示例：读取第一条 StoredEnchantments 的附魔 ID 并本地化显示",
+                  "desc": "原版附魔书：读取第一条附魔并本地化显示",
                   "target": {
                     "type": "item",
                     "value": "minecraft:enchanted_book"
                   },
                   "text_source": {
-                    "type": "nbt",
-                    "path": "StoredEnchantments[0].id",
+                    "type": "component",
+                    "component": "minecraft:stored_enchantments",
+                    "path": "levels.$keys[0]",
                     "prepend": "enchantment.",
                     "replace": {
                       ":": "."
@@ -167,17 +168,19 @@ public class Config {
               ]
             }
             """;
-    private static final ForgeConfigSpec.BooleanValue ENABLED = BUILDER.comment("是否启用物品栏名称牌渲染").define("enabled", true);
-    private static final ForgeConfigSpec.DoubleValue LABEL_SCALE = BUILDER.comment("槽位内紧凑标签缩放").defineInRange("labelScale", 0.7D, 0.3D, 1.0D);
+    private static final ModConfigSpec.BooleanValue ENABLED = BUILDER.comment("是否启用物品栏名称牌渲染").define("enabled", true);
+    private static final ModConfigSpec.DoubleValue LABEL_SCALE = BUILDER.comment("槽位内紧凑标签缩放").defineInRange("labelScale", 0.7D, 0.3D, 1.0D);
 
-    static final ForgeConfigSpec SPEC = BUILDER.build();
+    static final ModConfigSpec SPEC = BUILDER.build();
 
     public static boolean enabled;
     public static double labelScale;
     private static List<NameplateRule> nameplateRules = List.of();
 
-    @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
+        if (event.getConfig().getType() != ModConfig.Type.CLIENT) {
+            return;
+        }
         enabled = ENABLED.get();
         labelScale = LABEL_SCALE.get();
         loadNameplateRules();
@@ -242,14 +245,14 @@ public class Config {
                         continue;
                     }
                     if (targetType.equals("item")) {
-                        targetItem = ForgeRegistries.ITEMS.getValue(targetId);
-                        if (targetItem == null) {
+                        targetItem = BuiltInRegistries.ITEM.get(targetId);
+                        if (targetItem == null || !BuiltInRegistries.ITEM.containsKey(targetId)) {
                             LOGGER.warn("Skipped nameplate rule at index {} because item {} does not exist", order, targetId);
                             order++;
                             continue;
                         }
                     } else {
-                        targetTag = TagKey.create(ForgeRegistries.ITEMS.getRegistryKey(), targetId);
+                        targetTag = TagKey.create(Registries.ITEM, targetId);
                     }
                 } else if (targetType.equals("class")) {
                     try {
@@ -278,10 +281,30 @@ public class Config {
 
                 String sourceType = source.get("type").getAsString();
                 List<NbtPathPart> path = List.of();
+                DataComponentType<?> componentType = null;
                 Integer tooltipIndex = null;
-                if (sourceType.equals("nbt")) {
+                if (sourceType.equals("nbt") || sourceType.equals("component")) {
+                    if (sourceType.equals("component")) {
+                        if (!source.has("component") || !source.get("component").isJsonPrimitive()) {
+                            LOGGER.warn("Skipped nameplate rule at index {} because component text_source.component is required", order);
+                            order++;
+                            continue;
+                        }
+                        ResourceLocation componentId = ResourceLocation.tryParse(source.get("component").getAsString());
+                        if (componentId == null || !BuiltInRegistries.DATA_COMPONENT_TYPE.containsKey(componentId)) {
+                            LOGGER.warn("Skipped nameplate rule at index {} because data component {} does not exist", order, source.get("component").getAsString());
+                            order++;
+                            continue;
+                        }
+                        componentType = BuiltInRegistries.DATA_COMPONENT_TYPE.get(componentId);
+                        if (componentType == null || componentType.isTransient()) {
+                            LOGGER.warn("Skipped nameplate rule at index {} because data component {} is not persistent", order, componentId);
+                            order++;
+                            continue;
+                        }
+                    }
                     if (!source.has("path") || !source.get("path").isJsonPrimitive()) {
-                        LOGGER.warn("Skipped nameplate rule at index {} because NBT text_source.path is required", order);
+                        LOGGER.warn("Skipped nameplate rule at index {} because {} text_source.path is required", order, sourceType);
                         order++;
                         continue;
                     }
@@ -375,7 +398,7 @@ public class Config {
                     }
                 }
                 boolean i18n = source.has("i18n") && source.get("i18n").getAsBoolean();
-                TextSource textSource = new TextSource(sourceType, path, tooltipIndex, splitSeparator, splitIndex, joinSeparator, joinPrepend, joinAppend, sourceReplacements, i18n);
+                TextSource textSource = new TextSource(sourceType, componentType, path, tooltipIndex, splitSeparator, splitIndex, joinSeparator, joinPrepend, joinAppend, sourceReplacements, i18n);
 
                 int priority = entry.has("priority") ? entry.get("priority").getAsInt() : 0;
                 loadedRules.add(new NameplateRule(targetItem, targetTag, targetClass, textSource, removeText, ruleReplacements, priority, order));
@@ -436,6 +459,6 @@ public class Config {
     public record NbtPathPart(String key, Integer index) {
     }
 
-    public record TextSource(String type, List<NbtPathPart> path, Integer tooltipIndex, String splitSeparator, Integer splitIndex, String joinSeparator, String joinPrepend, String joinAppend, Map<String, String> replacements, boolean i18n) {
+    public record TextSource(String type, DataComponentType<?> component, List<NbtPathPart> path, Integer tooltipIndex, String splitSeparator, Integer splitIndex, String joinSeparator, String joinPrepend, String joinAppend, Map<String, String> replacements, boolean i18n) {
     }
 }

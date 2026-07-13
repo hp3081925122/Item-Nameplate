@@ -2,8 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.hp.item_nameplate.mixin",
-  "compatibilityLevel": "JAVA_8",
-  "refmap": "item_nameplate.refmap.json",
+  "compatibilityLevel": "JAVA_21",
   "mixins": [
   ],
   "client": [

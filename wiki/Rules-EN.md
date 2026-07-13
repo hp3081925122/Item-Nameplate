@@ -110,6 +110,7 @@ All vanilla smithing templates use:
 | --- | --- | --- |
 | `item_name` | None | Current item display name. |
 | `nbt` | `path` | A string at an NBT path. |
+| `component` | `component`, `path` | 1.21.1: a string in an encoded item component. |
 | `tooltip` | `index` | A normal vanilla tooltip line; the first line is `0`. |
 
 ### item_name
@@ -161,6 +162,29 @@ The first enchantment ID in an enchanted book is:
 
 Missing paths, out-of-range list indexes, and non-string final values fall back to the original item name.
 
+### component (1.21.1)
+
+`component` is the 1.21.1 counterpart to `nbt`. Set `component` to an item component ID and use the same dot and list-index path syntax as the 1.20.1 NBT source.
+
+```json
+{
+  "text_source": {
+    "type": "component",
+    "component": "minecraft:stored_enchantments",
+    "path": "levels.$keys[0]",
+    "prepend": "enchantment.",
+    "replace": {
+      ":": "."
+    },
+    "i18n": true
+  }
+}
+```
+
+The component is encoded into an NBT tree through its own Codec before `path` is evaluated. `$keys[non-negative index]` reads a key from the current compound; `levels.$keys[0]` reads the first enchantment ID.
+
+`component` supports the same `prepend`, source-level `replace`, `split`, `join`, and `i18n` operations as `nbt`. Missing or transient components and invalid paths fall back to the original item name.
+
 ### tooltip
 
 `tooltip.index` is zero-based and reads normal, non-advanced tooltip lines.
@@ -176,9 +200,9 @@ Missing paths, out-of-range list indexes, and non-string final values fall back 
 
 Smithing templates use “Smithing Template” as line `0`; their specific upgrade or trim name is line `1`. Like `item_name`, tooltip sources use root-level processing rather than NBT-only fields.
 
-## NBT-only text operations
+## NBT and component text operations
 
-The fields below work only when `text_source.type` is `nbt`.
+The fields below work when `text_source.type` is `nbt` or `component`.
 
 ### prepend
 

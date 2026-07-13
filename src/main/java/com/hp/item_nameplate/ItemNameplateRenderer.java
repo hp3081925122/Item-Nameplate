@@ -1,23 +1,33 @@
 package com.hp.item_nameplate;
 
+import com.mojang.serialization.Codec;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.inventory.Slot;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import java.util.regex.Pattern;
 
+@EventBusSubscriber(modid = Item_nameplate.MODID, value = Dist.CLIENT)
 public class ItemNameplateRenderer {
     private static final int NAME_COLOR = 0xFFFFFF55;
     private static final int OUTLINE_COLOR = 0xFF000000;
@@ -47,14 +57,14 @@ public class ItemNameplateRenderer {
             int slotLeft = screen.getGuiLeft() + slot.x;
             int slotTop = screen.getGuiTop() + slot.y;
             Component slotLabel = buildSlotLabel(stack);
-            int labelTop = Math.min(slotTop + 10, screen.getGuiTop() + screen.getYSize() - Mth.ceil(font.lineHeight * (float) Config.labelScale));
+            int labelTop = Math.min(slotTop + 16 - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale), screen.getGuiTop() + screen.getYSize() - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale));
             renderScaledLabel(guiGraphics, font, slotLabel, slotLeft + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale, screen.getGuiLeft(), screen.getGuiLeft() + screen.getXSize());
         }
     }
 
     @SubscribeEvent
-    public void onHotbarRenderPost(RenderGuiOverlayEvent.Post event) {
-        if (!Config.enabled || event.getOverlay() != VanillaGuiOverlay.HOTBAR.type()) {
+    public static void onHotbarRenderPost(RenderGuiLayerEvent.Post event) {
+        if (!Config.enabled || !event.getName().equals(VanillaGuiLayers.HOTBAR)) {
             return;
         }
 
@@ -74,7 +84,7 @@ public class ItemNameplateRenderer {
             }
 
             Component slotLabel = buildSlotLabel(stack);
-            int labelTop = Math.min(slotTop + 15, guiGraphics.guiHeight() - Mth.ceil(font.lineHeight * (float) Config.labelScale) - 1);
+            int labelTop = Math.min(slotTop + 16 - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale), guiGraphics.guiHeight() - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale));
             renderScaledLabel(guiGraphics, font, slotLabel, hotbarItemLeft + slotIndex * 20 + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale, 0, guiGraphics.guiWidth());
         }
     }
@@ -139,15 +149,42 @@ public class ItemNameplateRenderer {
             return stack.getHoverName().getString();
         }
         if (source.type().equals("tooltip")) {
-            var tooltipLines = stack.getTooltipLines(Minecraft.getInstance().player, TooltipFlag.NORMAL);
+            Minecraft minecraft = Minecraft.getInstance();
+            Item.TooltipContext tooltipContext = minecraft.level == null ? Item.TooltipContext.EMPTY : Item.TooltipContext.of(minecraft.level);
+            var tooltipLines = stack.getTooltipLines(tooltipContext, minecraft.player, TooltipFlag.NORMAL);
             return source.tooltipIndex() < tooltipLines.size() ? tooltipLines.get(source.tooltipIndex()).getString() : null;
         }
-        Tag current = stack.getTag();
+        Tag current;
+        if (source.type().equals("component")) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.level == null) {
+                return null;
+            }
+            @SuppressWarnings("unchecked")
+            DataComponentType<Object> componentType = (DataComponentType<Object>) source.component();
+            Object componentValue = stack.get(componentType);
+            if (componentValue == null) {
+                return null;
+            }
+            @SuppressWarnings("unchecked")
+            Codec<Object> componentCodec = (Codec<Object>) componentType.codecOrThrow();
+            current = componentCodec.encodeStart(RegistryOps.create(NbtOps.INSTANCE, minecraft.level.registryAccess()), componentValue).result().orElse(null);
+        } else {
+            CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+            current = customData == null ? null : customData.copyTag();
+        }
         if (current == null) {
             return null;
         }
 
         for (Config.NbtPathPart pathPart : source.path()) {
+            if (pathPart.key().equals("$keys")) {
+                if (!(current instanceof CompoundTag compound) || pathPart.index() == null || pathPart.index() >= compound.size()) {
+                    return null;
+                }
+                current = net.minecraft.nbt.StringTag.valueOf(compound.getAllKeys().stream().skip(pathPart.index()).findFirst().orElse(""));
+                continue;
+            }
             if (!(current instanceof CompoundTag compound) || !compound.contains(pathPart.key())) {
                 return null;
             }
@@ -163,7 +200,6 @@ public class ItemNameplateRenderer {
         if (!(current instanceof net.minecraft.nbt.StringTag)) {
             return null;
         }
-
         String text = current.getAsString();
         String[] values = new String[]{text};
         if (source.splitSeparator() != null) {

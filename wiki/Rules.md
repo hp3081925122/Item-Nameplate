@@ -110,12 +110,13 @@
 
 ## text_source：读取名称文字
 
-`text_source` 是必填对象。支持 `item_name`、`nbt`、`tooltip` 三种来源。
+`text_source` 是必填对象。1.20.1 支持 `item_name`、`nbt`、`tooltip`；1.21.1 另外支持 `component`。
 
 | `type` | 必填字段 | 读取内容 |
 | --- | --- | --- |
 | `item_name` | 无 | 物品当前名称。 |
 | `nbt` | `path` | 指定 NBT 路径中的字符串标签。 |
+| `component` | `component`、`path` | 1.21.1：指定物品组件编码结果中的字符串。 |
 | `tooltip` | `index` | 原版普通提示框的指定行，第一行索引为 `0`。 |
 
 ### 从物品名称读取：item_name
@@ -171,6 +172,29 @@
 
 路径不存在、列表索引越界、最终值不是字符串时，本次读取失败，名称牌会回退显示物品原名称。
 
+### 从物品组件读取：component（1.21.1）
+
+`component` 是 1.21.1 对应 `nbt` 的写法。`component` 填物品组件 ID，`path` 继续使用与 1.20.1 NBT 规则相同的点号和列表索引语法。
+
+```json
+{
+  "text_source": {
+    "type": "component",
+    "component": "minecraft:stored_enchantments",
+    "path": "levels.$keys[0]",
+    "prepend": "enchantment.",
+    "replace": {
+      ":": "."
+    },
+    "i18n": true
+  }
+}
+```
+
+组件会先通过自身 Codec 编码成 NBT 树，再读取 `path`。`$keys[非负索引]` 用于取得当前复合对象的第几个键；示例中的 `levels.$keys[0]` 会取得第一条附魔 ID。
+
+`component` 支持与 `nbt` 相同的 `prepend`、`text_source.replace`、`split`、`join` 和 `i18n`。组件不存在、组件是瞬态类型、物品没有该组件或路径读取失败时，会回退显示物品原名称。
+
 ### 从提示框读取：tooltip
 
 `tooltip.index` 是从 `0` 开始的行号。读取的是普通提示框，不包含 F3+H 高级提示信息。
@@ -190,7 +214,7 @@
 
 ## NBT 专用文字处理
 
-以下字段只在 `text_source.type` 为 `nbt` 时生效。它们都写在 `text_source` 内。
+以下字段在 `text_source.type` 为 `nbt` 或 `component` 时生效。它们都写在 `text_source` 内。
 
 ### prepend：添加前缀
 
