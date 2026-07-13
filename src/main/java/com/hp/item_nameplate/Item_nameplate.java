@@ -2,6 +2,7 @@ package com.hp.item_nameplate;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterItemDecorationsEvent;
+import net.minecraftforge.client.event.RegisterShadersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -22,6 +23,12 @@ public class Item_nameplate {
         @SubscribeEvent
         public static void registerItemDecorations(RegisterItemDecorationsEvent event) {
             ForgeRegistries.ITEMS.getValues().forEach(item -> event.register(item, ItemNameplateRenderer.INSTANCE));
+        }
+
+        @SubscribeEvent
+        public static void registerShaders(RegisterShadersEvent event) {
+            // 注册名称牌专用的强度字体与彩色字体描边着色器。
+            NameplateShaderRenderer.registerShaders(event);
         }
     }
 }
