@@ -169,20 +169,17 @@ public class Config {
             """;
     private static final ForgeConfigSpec.BooleanValue ENABLED = BUILDER.comment("是否启用物品栏名称牌渲染").define("enabled", true);
     private static final ForgeConfigSpec.DoubleValue LABEL_SCALE = BUILDER.comment("槽位内紧凑标签缩放").defineInRange("labelScale", 0.7D, 0.3D, 1.0D);
-    private static final ForgeConfigSpec.BooleanValue USE_SHADER = BUILDER.comment("是否使用 Shader 文字描边，部分整合包或渲染模组环境可能不兼容").define("useShader", false);
 
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
     public static boolean enabled;
     public static double labelScale;
-    public static boolean useShader;
     private static List<NameplateRule> nameplateRules = List.of();
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
         enabled = ENABLED.get();
         labelScale = LABEL_SCALE.get();
-        useShader = USE_SHADER.get();
         loadNameplateRules();
     }
 

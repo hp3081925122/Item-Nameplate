@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -30,64 +29,37 @@ public class ItemNameplateRenderer implements IItemDecorator {
             return false;
         }
 
-        boolean profiling = ItemNameplateDebugBenchmark.isProfilingNameplate();
-        long phaseStart = profiling ? System.nanoTime() : 0L;
         Minecraft minecraft = Minecraft.getInstance();
-        Config.NameplateRule rule = Config.getNameplateRule(stack.getItem()).orElse(null);
-        if (profiling) {
-            ItemNameplateDebugBenchmark.recordRuleNanos(System.nanoTime() - phaseStart);
-        }
-        if (minecraft.player == null || minecraft.options.hideGui || rule == null) {
+        if (minecraft.player == null || minecraft.options.hideGui || Config.getNameplateRule(stack.getItem()).isEmpty()) {
             return false;
         }
 
-        phaseStart = profiling ? System.nanoTime() : 0L;
-        Component label = buildSlotLabel(stack, rule);
-        if (profiling) {
-            ItemNameplateDebugBenchmark.recordTextNanos(System.nanoTime() - phaseStart);
-        }
         int labelTop = yOffset + 16 - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale);
-        renderScaledLabel(guiGraphics, font, label, xOffset + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale, profiling);
+        renderScaledLabel(guiGraphics, font, buildSlotLabel(stack), xOffset + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale);
         return false;
     }
 
-    private static void renderScaledLabel(GuiGraphics guiGraphics, Font font, Component line, int centerX, int topY, int color, int outlineColor, float scale, boolean profiling) {
+    private static void renderScaledLabel(GuiGraphics guiGraphics, Font font, Component line, int centerX, int topY, int color, int outlineColor, float scale) {
         if (line == null) {
             return;
         }
 
-        long phaseStart = profiling ? System.nanoTime() : 0L;
         // 按槽位的固定像素宽度截取文字，并为左右描边各预留一个原始字体像素。
         int maxTextWidth = Math.max(1, Mth.floor(LABEL_WIDTH / scale) - 2);
         String text = font.plainSubstrByWidth(line.getString(), maxTextWidth);
         line = Component.literal(text);
-        boolean legacyRenderer = ItemNameplateDebugBenchmark.useLegacyRenderer();
-        boolean shaderRenderer = ItemNameplateDebugBenchmark.useShaderRenderer();
-        FormattedCharSequence formattedLine = legacyRenderer ? null : line.getVisualOrderText();
-        int rawWidth = legacyRenderer ? font.width(line) : font.width(formattedLine);
+        int rawWidth = font.width(line);
         float scaledWidth = rawWidth * scale;
         float left = centerX - scaledWidth / 2.0F;
-        if (profiling) {
-            ItemNameplateDebugBenchmark.recordLayoutNanos(System.nanoTime() - phaseStart);
-            phaseStart = System.nanoTime();
-        }
 
+        // 使用无深度遮挡的文字渲染类型，让名称牌始终覆盖物品材质。
+        guiGraphics.flush();
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(left, topY + 1, 300.0F);
         guiGraphics.pose().scale(scale, scale, 1.0F);
-        if (legacyRenderer) {
-            // 基准模式保留原来的九次文字调用与每个名称牌显式刷新。
-            guiGraphics.flush();
-            drawOutlinedText(guiGraphics, font, line, 0, 0, color, outlineColor);
-            guiGraphics.flush();
-        } else if (!shaderRenderer || !NameplateShaderRenderer.draw(font, formattedLine, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), color)) {
-            // 使用原版八方向描边入口，复用一次格式化结果并交给缓冲系统批量提交。
-            font.drawInBatch8xOutline(formattedLine, 0, 0, color, outlineColor, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), 15728880);
-        }
+        drawOutlinedText(guiGraphics, font, line, 0, 0, color, outlineColor);
         guiGraphics.pose().popPose();
-        if (profiling) {
-            ItemNameplateDebugBenchmark.recordDrawNanos(System.nanoTime() - phaseStart);
-        }
+        guiGraphics.flush();
     }
 
     private static void drawOutlinedText(GuiGraphics guiGraphics, Font font, Component line, int x, int y, int color, int outlineColor) {
@@ -102,8 +74,9 @@ public class ItemNameplateRenderer implements IItemDecorator {
         font.drawInBatch(line, x, y, color, false, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), Font.DisplayMode.SEE_THROUGH, 0, 15728880);
     }
 
-    private static Component buildSlotLabel(ItemStack stack, Config.NameplateRule rule) {
+    private static Component buildSlotLabel(ItemStack stack) {
         String originalName = stack.getHoverName().getString();
+        Config.NameplateRule rule = Config.getNameplateRule(stack.getItem()).orElse(null);
         String displayName = readTextSource(stack, rule.textSource());
         if (displayName == null || displayName.isEmpty()) {
             displayName = originalName;
