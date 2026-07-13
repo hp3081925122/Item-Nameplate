@@ -22,6 +22,7 @@ import net.minecraft.world.inventory.Slot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ContainerScreenEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
@@ -33,7 +34,8 @@ public class ItemNameplateRenderer {
     private static final int OUTLINE_COLOR = 0xFF000000;
     private static final int LABEL_WIDTH = 16;
 
-    public static void renderContainerLabels(AbstractContainerScreen<?> screen, GuiGraphics guiGraphics) {
+    @SubscribeEvent
+    public static void onContainerRenderForeground(ContainerScreenEvent.Render.Foreground event) {
         if (!Config.enabled) {
             return;
         }
@@ -43,6 +45,8 @@ public class ItemNameplateRenderer {
             return;
         }
 
+        AbstractContainerScreen<?> screen = event.getContainerScreen();
+        GuiGraphics guiGraphics = event.getGuiGraphics();
         Font font = minecraft.font;
         for (Slot slot : screen.getMenu().slots) {
             if (!slot.hasItem() || !slot.isActive()) {
@@ -54,11 +58,11 @@ public class ItemNameplateRenderer {
                 continue;
             }
 
-            int slotLeft = screen.getGuiLeft() + slot.x;
-            int slotTop = screen.getGuiTop() + slot.y;
+            int slotLeft = slot.x;
+            int slotTop = slot.y;
             Component slotLabel = buildSlotLabel(stack);
-            int labelTop = Math.min(slotTop + 16 - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale), screen.getGuiTop() + screen.getYSize() - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale));
-            renderScaledLabel(guiGraphics, font, slotLabel, slotLeft + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale, screen.getGuiLeft(), screen.getGuiLeft() + screen.getXSize());
+            int labelTop = Math.min(slotTop + 16 - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale), screen.getYSize() - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale));
+            renderScaledLabel(guiGraphics, font, slotLabel, slotLeft + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale, 0, screen.getXSize());
         }
     }
 
@@ -105,7 +109,7 @@ public class ItemNameplateRenderer {
         // 使用无深度遮挡的文字渲染类型，让名称牌始终覆盖物品材质。
         guiGraphics.flush();
         guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(left, topY + 1, 200.0F);
+        guiGraphics.pose().translate(left, topY + 1, 300.0F);
         guiGraphics.pose().scale(scale, scale, 1.0F);
         drawOutlinedText(guiGraphics, font, line, 0, 0, color, outlineColor);
         guiGraphics.pose().popPose();
