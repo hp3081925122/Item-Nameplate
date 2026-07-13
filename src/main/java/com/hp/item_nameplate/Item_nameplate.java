@@ -1,12 +1,12 @@
 package com.hp.item_nameplate;
 
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.client.event.RegisterItemDecorationsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.registries.ForgeRegistries;
 
 @Mod(Item_nameplate.MODID)
 public class Item_nameplate {
@@ -20,8 +20,8 @@ public class Item_nameplate {
     public static class ClientModEvents {
 
         @SubscribeEvent
-        public static void onClientSetup(FMLClientSetupEvent event) {
-            MinecraftForge.EVENT_BUS.register(new ItemNameplateRenderer());
+        public static void registerItemDecorations(RegisterItemDecorationsEvent event) {
+            ForgeRegistries.ITEMS.getValues().forEach(item -> event.register(item, ItemNameplateRenderer.INSTANCE));
         }
     }
 }

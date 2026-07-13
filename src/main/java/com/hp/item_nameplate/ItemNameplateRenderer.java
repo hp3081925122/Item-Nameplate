@@ -3,7 +3,6 @@ package com.hp.item_nameplate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -11,79 +10,36 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.inventory.Slot;
-import net.minecraftforge.client.event.ContainerScreenEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.client.IItemDecorator;
 
 import java.util.regex.Pattern;
 
-public class ItemNameplateRenderer {
+public class ItemNameplateRenderer implements IItemDecorator {
+    public static final ItemNameplateRenderer INSTANCE = new ItemNameplateRenderer();
     private static final int NAME_COLOR = 0xFFFFFF55;
     private static final int OUTLINE_COLOR = 0xFF000000;
     private static final int LABEL_WIDTH = 16;
 
-    @SubscribeEvent
-    public void onContainerRenderForeground(ContainerScreenEvent.Render.Foreground event) {
+    private ItemNameplateRenderer() {
+    }
+
+    @Override
+    public boolean render(GuiGraphics guiGraphics, Font font, ItemStack stack, int xOffset, int yOffset) {
         if (!Config.enabled) {
-            return;
+            return false;
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui) {
-            return;
+        if (minecraft.player == null || minecraft.options.hideGui || Config.getNameplateRule(stack.getItem()).isEmpty()) {
+            return false;
         }
 
-        AbstractContainerScreen<?> screen = event.getContainerScreen();
-        GuiGraphics guiGraphics = event.getGuiGraphics();
-        Font font = minecraft.font;
-        for (Slot slot : screen.getMenu().slots) {
-            if (!slot.hasItem() || !slot.isActive()) {
-                continue;
-            }
-
-            ItemStack stack = slot.getItem();
-            if (Config.getNameplateRule(stack.getItem()).isEmpty()) {
-                continue;
-            }
-
-            int slotLeft = slot.x;
-            int slotTop = slot.y;
-            Component slotLabel = buildSlotLabel(stack);
-            int labelTop = Math.min(slotTop + 16 - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale), screen.getYSize() - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale));
-            renderScaledLabel(guiGraphics, font, slotLabel, slotLeft + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale, 0, screen.getXSize());
-        }
+        int labelTop = yOffset + 16 - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale);
+        renderScaledLabel(guiGraphics, font, buildSlotLabel(stack), xOffset + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale);
+        return false;
     }
 
-    @SubscribeEvent
-    public void onHotbarRenderPost(RenderGuiOverlayEvent.Post event) {
-        if (!Config.enabled || event.getOverlay() != VanillaGuiOverlay.HOTBAR.type()) {
-            return;
-        }
-
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.screen != null || minecraft.options.hideGui) {
-            return;
-        }
-
-        GuiGraphics guiGraphics = event.getGuiGraphics();
-        Font font = minecraft.font;
-        int hotbarItemLeft = guiGraphics.guiWidth() / 2 - 88;
-        int slotTop = guiGraphics.guiHeight() - 19;
-        for (int slotIndex = 0; slotIndex < 9; slotIndex++) {
-            ItemStack stack = minecraft.player.getInventory().items.get(slotIndex);
-            if (stack.isEmpty() || Config.getNameplateRule(stack.getItem()).isEmpty()) {
-                continue;
-            }
-
-            Component slotLabel = buildSlotLabel(stack);
-            int labelTop = Math.min(slotTop + 16 - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale), guiGraphics.guiHeight() - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale));
-            renderScaledLabel(guiGraphics, font, slotLabel, hotbarItemLeft + slotIndex * 20 + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale, 0, guiGraphics.guiWidth());
-        }
-    }
-
-    private static void renderScaledLabel(GuiGraphics guiGraphics, Font font, Component line, int centerX, int topY, int color, int outlineColor, float scale, int minX, int maxX) {
+    private static void renderScaledLabel(GuiGraphics guiGraphics, Font font, Component line, int centerX, int topY, int color, int outlineColor, float scale) {
         if (line == null) {
             return;
         }
@@ -94,7 +50,7 @@ public class ItemNameplateRenderer {
         line = Component.literal(text);
         int rawWidth = font.width(line);
         float scaledWidth = rawWidth * scale;
-        float left = Mth.clamp(centerX - scaledWidth / 2.0F, minX, Math.max((float) minX, maxX - scaledWidth));
+        float left = centerX - scaledWidth / 2.0F;
 
         // 使用无深度遮挡的文字渲染类型，让名称牌始终覆盖物品材质。
         guiGraphics.flush();
