@@ -47,7 +47,7 @@ public class ItemNameplateRenderer {
             int slotLeft = screen.getGuiLeft() + slot.x;
             int slotTop = screen.getGuiTop() + slot.y;
             Component slotLabel = buildSlotLabel(stack);
-            int labelTop = Math.min(slotTop + 10, screen.getGuiTop() + screen.getYSize() - Mth.ceil(font.lineHeight * (float) Config.labelScale));
+            int labelTop = Math.min(slotTop + 16 - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale), screen.getGuiTop() + screen.getYSize() - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale));
             renderScaledLabel(guiGraphics, font, slotLabel, slotLeft + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale, screen.getGuiLeft(), screen.getGuiLeft() + screen.getXSize());
         }
     }
@@ -74,7 +74,7 @@ public class ItemNameplateRenderer {
             }
 
             Component slotLabel = buildSlotLabel(stack);
-            int labelTop = Math.min(slotTop + 15, guiGraphics.guiHeight() - Mth.ceil(font.lineHeight * (float) Config.labelScale) - 1);
+            int labelTop = Math.min(slotTop + 16 - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale), guiGraphics.guiHeight() - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale));
             renderScaledLabel(guiGraphics, font, slotLabel, hotbarItemLeft + slotIndex * 20 + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale, 0, guiGraphics.guiWidth());
         }
     }
