@@ -169,7 +169,7 @@ public class Config {
             }
             """;
     private static final ModConfigSpec.BooleanValue ENABLED = BUILDER.comment("是否启用物品栏名称牌渲染").define("enabled", true);
-    private static final ModConfigSpec.DoubleValue LABEL_SCALE = BUILDER.comment("槽位内紧凑标签缩放").defineInRange("labelScale", 0.7D, 0.3D, 1.0D);
+    private static final ModConfigSpec.DoubleValue LABEL_SCALE = BUILDER.comment("槽位内紧凑标签缩放").defineInRange("labelScale", 0.6D, 0.3D, 1.0D);
 
     static final ModConfigSpec SPEC = BUILDER.build();
 
