@@ -16,7 +16,9 @@
 
 `config/item_nameplate-common.toml`
 
-`config/item_nameplate_rules.json`
+`config/item_nameplate_rules/`
+
+该目录下的每个 `.json` 文件都会被读取。首次启动会生成 `minecraft.json`；可按物品命名空间创建文件，例如 `create.json`、`mekanism.json`。
 
 修改 JSON 后需要重启游戏，使规则重新加载。
 

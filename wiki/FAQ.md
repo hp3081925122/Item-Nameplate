@@ -4,11 +4,11 @@
 
 ## 名称牌没有显示
 
-检查 `config/item_nameplate-common.toml` 中 `enabled = true`，并确认对应物品能命中 `item_nameplate_rules.json` 的规则。
+检查 `config/item_nameplate-client.toml` 中 `enabled = true`，并确认对应物品能命中 `item_nameplate_rules/` 目录内 JSON 文件的规则。
 
 ## 修改 JSON 后没有变化
 
-规则只在游戏启动时加载。保存 `item_nameplate_rules.json` 后重启游戏。
+规则只在游戏启动时加载。保存 `item_nameplate_rules/` 目录内的 JSON 文件后重启游戏。
 
 ## 提示框出现时，其他名称牌为什么仍显示
 

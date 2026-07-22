@@ -16,7 +16,9 @@ After the first launch, configuration files are located at:
 
 `config/item_nameplate-common.toml`
 
-`config/item_nameplate_rules.json`
+`config/item_nameplate_rules/`
+
+Every `.json` file in this directory is loaded. The first launch creates `minecraft.json`; create files such as `create.json` or `mekanism.json` to group rules by item namespace.
 
 Restart the game after editing the JSON rules.
 

@@ -1,0 +1,135 @@
+{
+  "entries": [
+    {
+      "desc": "原版附魔书：读取第一条附魔并本地化显示",
+      "target": {
+        "type": "item",
+        "value": "minecraft:enchanted_book"
+      },
+      "text_source": {
+        "type": "component",
+        "component": "minecraft:stored_enchantments",
+        "path": "levels.$keys[0]",
+        "prepend": "enchantment.",
+        "replace": {
+          ":": "."
+        },
+        "i18n": true
+      },
+      "priority": 20
+    },
+    {
+      "desc": "原版刷怪蛋：兼容简体中文和英文名称",
+      "target": {
+        "type": "class",
+        "value": "net.minecraft.world.item.SpawnEggItem"
+      },
+      "text_source": { "type": "item_name" },
+      "remove_text": ["刷怪蛋", " Spawn Egg"],
+      "priority": 10
+    },
+    {
+      "desc": "原版普通药水：兼容简体中文和英文名称",
+      "target": {
+        "type": "item",
+        "value": "minecraft:potion"
+      },
+      "text_source": { "type": "item_name" },
+      "remove_text": ["Potion of ", " Potion", "药水"],
+      "replace": {
+        "瞬间治疗": "治疗",
+        "瞬间伤害": "伤害",
+        "Instant Health": "Healing",
+        "Instant Damage": "Harming"
+      },
+      "priority": 10
+    },
+    {
+      "desc": "原版喷溅型药水：兼容简体中文和英文名称",
+      "target": {
+        "type": "item",
+        "value": "minecraft:splash_potion"
+      },
+      "text_source": { "type": "item_name" },
+      "remove_text": ["Splash Potion of ", "Splash ", " Potion", "喷溅型", "药水"],
+      "replace": {
+        "瞬间治疗": "治疗",
+        "瞬间伤害": "伤害",
+        "Instant Health": "Healing",
+        "Instant Damage": "Harming"
+      },
+      "priority": 10
+    },
+    {
+      "desc": "原版滞留型药水：兼容简体中文和英文名称",
+      "target": {
+        "type": "item",
+        "value": "minecraft:lingering_potion"
+      },
+      "text_source": { "type": "item_name" },
+      "remove_text": ["Lingering Potion of ", "Lingering ", " Potion", "滞留型", "药水"],
+      "replace": {
+        "瞬间治疗": "治疗",
+        "瞬间伤害": "伤害",
+        "Instant Health": "Healing",
+        "Instant Damage": "Harming"
+      },
+      "priority": 10
+    },
+    {
+      "desc": "锻造升级模板：从提示框读取具体模板名称",
+      "target": {
+        "type": "tag",
+        "value": "item_nameplate:smithing_templates"
+      },
+      "text_source": {
+        "type": "tooltip",
+        "index": 1
+      },
+      "remove_text": ["升级", " Upgrade"],
+      "priority": 10
+    },
+    {
+      "desc": "所有锻造模板：从提示框读取具体模板名称",
+      "target": {
+        "type": "class",
+        "value": "net.minecraft.world.item.SmithingTemplateItem"
+      },
+      "text_source": {
+        "type": "tooltip",
+        "index": 1
+      },
+      "remove_text": ["升级", " Upgrade", "盔甲纹饰", " Armor Trim"],
+      "priority": 9
+    },
+    {
+      "desc": "盔甲纹饰锻造模板：从提示框读取具体纹饰名称",
+      "target": {
+        "type": "tag",
+        "value": "minecraft:trim_templates"
+      },
+      "text_source": {
+        "type": "tooltip",
+        "index": 1
+      },
+      "remove_text": ["盔甲纹饰", " Armor Trim"],
+      "priority": 10
+    },
+    {
+      "desc": "原版药水箭：兼容简体中文和英文名称",
+      "target": {
+        "type": "item",
+        "value": "minecraft:tipped_arrow"
+      },
+      "text_source": { "type": "item_name" },
+      "remove_text": ["Arrow of ", " Tipped Arrow", "之箭", "药箭"],
+      "replace": {
+        "瞬间治疗": "治疗",
+        "瞬间伤害": "伤害",
+        "Instant Health": "Healing",
+        "Instant Damage": "Harming"
+      },
+      "priority": 10
+    }
+  ]
+}
