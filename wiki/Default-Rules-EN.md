@@ -2,7 +2,7 @@
 
 [中文](Default-Rules)
 
-The default `item_nameplate_rules.json` contains these rules when it is generated for the first time. Existing user files are never overwritten.
+The default `item_nameplate_rules/minecraft.json` contains these rules when it is generated for the first time. Existing user files are never overwritten.
 
 | Target | Match method | Text source | Result |
 | --- | --- | --- | --- |

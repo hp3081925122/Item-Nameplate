@@ -2,7 +2,7 @@
 
 [中文](Rules)
 
-This page documents every field currently implemented in `config/item_nameplate_rules.json`, including syntax and processing order. The root object must contain an `entries` array, with one label rule per object.
+This page documents every field currently implemented in JSON rule files under `config/item_nameplate_rules/`, including syntax and processing order. Each file root must contain an `entries` array, with one label rule per object.
 
 ## Complete rule
 

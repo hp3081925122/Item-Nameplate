@@ -4,11 +4,11 @@
 
 ## Labels do not appear
 
-Check that `enabled = true` in `config/item_nameplate-common.toml`, then ensure the item matches a rule in `item_nameplate_rules.json`.
+Check that `enabled = true` in `config/item_nameplate-common.toml`, then ensure the item matches a rule in a JSON file under `item_nameplate_rules/`.
 
 ## I changed the JSON but nothing changed
 
-Rules load only during game startup. Restart the game after saving `item_nameplate_rules.json`.
+Rules load only during game startup. Restart the game after saving a JSON file under `item_nameplate_rules/`.
 
 ## Why do other labels remain visible while a tooltip is open?
 

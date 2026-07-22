@@ -1,8 +1,8 @@
 package com.hp.item_nameplate;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
@@ -17,156 +17,30 @@ import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.JarURLConnection;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.jar.JarFile;
+import java.util.stream.Stream;
 
 @Mod.EventBusSubscriber(modid = Item_nameplate.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Path RULES_PATH = FMLPaths.CONFIGDIR.get().resolve("item_nameplate_rules.json");
-    private static final String DEFAULT_RULES = """
-            {
-              "entries": [
-                {
-                  "desc": "原版附魔书示例：读取第一条 StoredEnchantments 的附魔 ID 并本地化显示",
-                  "target": {
-                    "type": "item",
-                    "value": "minecraft:enchanted_book"
-                  },
-                  "text_source": {
-                    "type": "nbt",
-                    "path": "StoredEnchantments[0].id",
-                    "prepend": "enchantment.",
-                    "replace": {
-                      ":": "."
-                    },
-                    "i18n": true
-                  },
-                  "priority": 20
-                },
-                {
-                  "desc": "原版刷怪蛋：兼容简体中文和英文名称",
-                  "target": {
-                    "type": "class",
-                    "value": "net.minecraft.world.item.SpawnEggItem"
-                  },
-                  "text_source": { "type": "item_name" },
-                  "remove_text": ["刷怪蛋", " Spawn Egg"],
-                  "priority": 10
-                },
-                {
-                  "desc": "原版普通药水：兼容简体中文和英文名称",
-                  "target": {
-                    "type": "item",
-                    "value": "minecraft:potion"
-                  },
-                  "text_source": { "type": "item_name" },
-                  "remove_text": ["Potion of ", " Potion", "药水"],
-                  "replace": {
-                    "瞬间治疗": "治疗",
-                    "瞬间伤害": "伤害",
-                    "Instant Health": "Healing",
-                    "Instant Damage": "Harming"
-                  },
-                  "priority": 10
-                },
-                {
-                  "desc": "原版喷溅型药水：兼容简体中文和英文名称",
-                  "target": {
-                    "type": "item",
-                    "value": "minecraft:splash_potion"
-                  },
-                  "text_source": { "type": "item_name" },
-                  "remove_text": ["Splash Potion of ", "Splash ", " Potion", "喷溅型", "药水"],
-                  "replace": {
-                    "瞬间治疗": "治疗",
-                    "瞬间伤害": "伤害",
-                    "Instant Health": "Healing",
-                    "Instant Damage": "Harming"
-                  },
-                  "priority": 10
-                },
-                {
-                  "desc": "原版滞留型药水：兼容简体中文和英文名称",
-                  "target": {
-                    "type": "item",
-                    "value": "minecraft:lingering_potion"
-                  },
-                  "text_source": { "type": "item_name" },
-                  "remove_text": ["Lingering Potion of ", "Lingering ", " Potion", "滞留型", "药水"],
-                  "replace": {
-                    "瞬间治疗": "治疗",
-                    "瞬间伤害": "伤害",
-                    "Instant Health": "Healing",
-                    "Instant Damage": "Harming"
-                  },
-                  "priority": 10
-                },
-                {
-                  "desc": "锻造升级模板：从提示框读取具体模板名称",
-                  "target": {
-                    "type": "tag",
-                    "value": "item_nameplate:smithing_templates"
-                  },
-                  "text_source": {
-                    "type": "tooltip",
-                    "index": 1
-                  },
-                  "remove_text": ["升级", " Upgrade"],
-                  "priority": 10
-                },
-                {
-                  "desc": "所有锻造模板：从提示框读取具体模板名称",
-                  "target": {
-                    "type": "class",
-                    "value": "net.minecraft.world.item.SmithingTemplateItem"
-                  },
-                  "text_source": {
-                    "type": "tooltip",
-                    "index": 1
-                  },
-                  "remove_text": ["升级", " Upgrade", "盔甲纹饰", " Armor Trim"],
-                  "priority": 9
-                },
-                {
-                  "desc": "盔甲纹饰锻造模板：从提示框读取具体纹饰名称",
-                  "target": {
-                    "type": "tag",
-                    "value": "minecraft:trim_templates"
-                  },
-                  "text_source": {
-                    "type": "tooltip",
-                    "index": 1
-                  },
-                  "remove_text": ["盔甲纹饰", " Armor Trim"],
-                  "priority": 10
-                },
-                {
-                  "desc": "原版药水箭：兼容简体中文和英文名称",
-                  "target": {
-                    "type": "item",
-                    "value": "minecraft:tipped_arrow"
-                  },
-                  "text_source": { "type": "item_name" },
-                  "remove_text": ["Arrow of ", " Tipped Arrow", "之箭", "药箭"],
-                  "replace": {
-                    "瞬间治疗": "治疗",
-                    "瞬间伤害": "伤害",
-                    "Instant Health": "Healing",
-                    "Instant Damage": "Harming"
-                  },
-                  "priority": 10
-                }
-              ]
-            }
-            """;
+    private static final Path RULES_DIRECTORY = FMLPaths.CONFIGDIR.get().resolve("item_nameplate_rules");
+    private static final Path LEGACY_RULES_PATH = FMLPaths.CONFIGDIR.get().resolve("item_nameplate_rules.json");
+    private static final Path DEFAULT_RULES_PATH = RULES_DIRECTORY.resolve("minecraft.json");
+    private static final String DEFAULT_RULES_RESOURCE_DIRECTORY = "item_nameplate/default_rules/";
     private static final ForgeConfigSpec.BooleanValue ENABLED = BUILDER.comment("是否启用物品栏名称牌渲染").define("enabled", true);
     private static final ForgeConfigSpec.DoubleValue LABEL_SCALE = BUILDER.comment("槽位内紧凑标签缩放").defineInRange("labelScale", 0.6D, 0.3D, 1.0D);
 
@@ -194,21 +68,80 @@ public class Config {
 
     private static void loadNameplateRules() {
         try {
-            Files.createDirectories(RULES_PATH.getParent());
-            if (Files.notExists(RULES_PATH)) {
-                Files.writeString(RULES_PATH, DEFAULT_RULES, StandardCharsets.UTF_8);
+            Files.createDirectories(RULES_DIRECTORY);
+            if (Files.exists(LEGACY_RULES_PATH) && Files.notExists(DEFAULT_RULES_PATH)) {
+                Files.move(LEGACY_RULES_PATH, DEFAULT_RULES_PATH);
+            } else if (Files.exists(LEGACY_RULES_PATH) && Files.notExists(RULES_DIRECTORY.resolve("legacy.json"))) {
+                Files.move(LEGACY_RULES_PATH, RULES_DIRECTORY.resolve("legacy.json"));
             }
 
-            JsonElement root = JsonParser.parseString(Files.readString(RULES_PATH, StandardCharsets.UTF_8));
-            if (!root.isJsonObject() || !root.getAsJsonObject().has("entries") || !root.getAsJsonObject().get("entries").isJsonArray()) {
-                LOGGER.error("Invalid nameplate rules root in {}", RULES_PATH);
-                nameplateRules = List.of();
-                return;
+            URL bundledRulesUrl = Config.class.getClassLoader().getResource(DEFAULT_RULES_RESOURCE_DIRECTORY);
+            if (bundledRulesUrl == null) {
+                LOGGER.error("Missing bundled nameplate rules directory {}", DEFAULT_RULES_RESOURCE_DIRECTORY);
+            } else if (bundledRulesUrl.getProtocol().equals("file")) {
+                Path bundledRulesPath = Path.of(bundledRulesUrl.toURI());
+                try (Stream<Path> bundledRulePaths = Files.walk(bundledRulesPath)) {
+                    List<Path> jsonPaths = bundledRulePaths
+                            .filter(Files::isRegularFile)
+                            .filter(path -> path.getFileName().toString().endsWith(".json"))
+                            .sorted()
+                            .toList();
+                    for (Path bundledRulePath : jsonPaths) {
+                        Path targetPath = RULES_DIRECTORY.resolve(bundledRulesPath.relativize(bundledRulePath)).normalize();
+                        if (Files.exists(targetPath)) {
+                            continue;
+                        }
+                        Files.createDirectories(targetPath.getParent());
+                        Files.copy(bundledRulePath, targetPath);
+                    }
+                }
+            } else if (bundledRulesUrl.getProtocol().equals("jar")) {
+                JarURLConnection connection = (JarURLConnection) bundledRulesUrl.openConnection();
+                connection.setUseCaches(false);
+                String resourcePrefix = connection.getEntryName();
+                try (JarFile jarFile = connection.getJarFile()) {
+                    List<String> jsonPaths = jarFile.stream()
+                            .filter(entry -> !entry.isDirectory() && entry.getName().startsWith(resourcePrefix) && entry.getName().endsWith(".json"))
+                            .map(entry -> entry.getName().substring(resourcePrefix.length()))
+                            .sorted()
+                            .toList();
+                    for (String jsonPath : jsonPaths) {
+                        Path targetPath = RULES_DIRECTORY.resolve(jsonPath).normalize();
+                        if (Files.exists(targetPath)) {
+                            continue;
+                        }
+                        Files.createDirectories(targetPath.getParent());
+                        try (InputStream bundledRuleStream = jarFile.getInputStream(jarFile.getJarEntry(resourcePrefix + jsonPath))) {
+                            Files.copy(bundledRuleStream, targetPath);
+                        }
+                    }
+                }
+            } else {
+                LOGGER.error("Unsupported bundled nameplate rules protocol {}", bundledRulesUrl.getProtocol());
             }
 
             List<NameplateRule> loadedRules = new ArrayList<>();
             int order = 0;
-            for (JsonElement element : root.getAsJsonObject().getAsJsonArray("entries")) {
+            try (Stream<Path> rulePaths = Files.walk(RULES_DIRECTORY)) {
+                List<Path> jsonPaths = rulePaths
+                        .filter(Files::isRegularFile)
+                        .filter(path -> path.getFileName().toString().endsWith(".json"))
+                        .sorted(Comparator.comparing(path -> RULES_DIRECTORY.relativize(path).toString(), String.CASE_INSENSITIVE_ORDER))
+                        .toList();
+                for (Path rulePath : jsonPaths) {
+                    JsonElement root;
+                    try {
+                        root = JsonParser.parseString(Files.readString(rulePath, StandardCharsets.UTF_8));
+                    } catch (IOException | JsonParseException exception) {
+                        LOGGER.error("Failed to read nameplate rules from {}", rulePath, exception);
+                        continue;
+                    }
+                    if (!root.isJsonObject() || !root.getAsJsonObject().has("entries") || !root.getAsJsonObject().get("entries").isJsonArray()) {
+                        LOGGER.error("Invalid nameplate rules root in {}", rulePath);
+                        continue;
+                    }
+
+                    for (JsonElement element : root.getAsJsonObject().getAsJsonArray("entries")) {
                 if (!element.isJsonObject()) {
                     LOGGER.warn("Skipped non-object nameplate rule at index {}", order);
                     order++;
@@ -379,7 +312,9 @@ public class Config {
 
                 int priority = entry.has("priority") ? entry.get("priority").getAsInt() : 0;
                 loadedRules.add(new NameplateRule(targetItem, targetTag, targetClass, textSource, removeText, ruleReplacements, priority, order));
-                order++;
+                    order++;
+                    }
+                }
             }
 
             loadedRules.sort((first, second) -> {
@@ -387,8 +322,8 @@ public class Config {
                 return priorityComparison != 0 ? priorityComparison : Integer.compare(first.order(), second.order());
             });
             nameplateRules = List.copyOf(loadedRules);
-        } catch (IOException | IllegalStateException exception) {
-            LOGGER.error("Failed to load nameplate rules from {}", RULES_PATH, exception);
+        } catch (IOException | IllegalStateException | URISyntaxException exception) {
+            LOGGER.error("Failed to load nameplate rules from {}", RULES_DIRECTORY, exception);
             nameplateRules = List.of();
         }
     }

@@ -2,7 +2,7 @@
 
 [English](Rules-EN)
 
-本页说明 `config/item_nameplate_rules.json` 当前实现支持的全部字段、写法和执行顺序。规则文件根对象必须包含 `entries` 数组；数组中的每个对象是一条规则。
+本页说明 `config/item_nameplate_rules/` 中 JSON 规则文件当前实现支持的全部字段、写法和执行顺序。每个规则文件根对象必须包含 `entries` 数组；数组中的每个对象是一条规则。
 
 ## 一条完整规则
 

@@ -2,7 +2,7 @@
 
 [English](Default-Rules-EN)
 
-首次启动时，`item_nameplate_rules.json` 会生成以下默认规则。已有配置文件不会自动覆盖，以避免覆盖用户自定义内容。
+首次启动时，`item_nameplate_rules/minecraft.json` 会生成以下默认规则。已有配置文件不会自动覆盖，以避免覆盖用户自定义内容。
 
 | 目标 | 匹配方式 | 文字来源 | 效果 |
 | --- | --- | --- | --- |
