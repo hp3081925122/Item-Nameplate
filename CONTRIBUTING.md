@@ -6,7 +6,6 @@
 
 1. 在 `src/main/resources/item_nameplate/default_rules/` 新建以目标物品命名空间命名的 JSON 文件，例如 `create.json`。
 2. 使用现有规则格式编写 `entries`，并为每条规则填写清楚的 `desc`。
-3. 不要修改与本次兼容无关的默认规则文件。
 
 下面是 `create.json` 的最小示例，实际提交时请替换为真实物品 ID 和规则：
 
