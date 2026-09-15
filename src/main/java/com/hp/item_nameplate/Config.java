@@ -78,7 +78,8 @@ public class Config {
             URL bundledRulesUrl = Config.class.getClassLoader().getResource(DEFAULT_RULES_RESOURCE_DIRECTORY);
             if (bundledRulesUrl == null) {
                 LOGGER.error("Missing bundled nameplate rules directory {}", DEFAULT_RULES_RESOURCE_DIRECTORY);
-            } else if (bundledRulesUrl.getProtocol().equals("file")) {
+            } else if (bundledRulesUrl.getProtocol().equals("file") || bundledRulesUrl.getProtocol().equals("union")) {
+                // 开发环境的 union URL 也提供 NIO 路径，统一按目录遍历复制内置规则。
                 Path bundledRulesPath = Path.of(bundledRulesUrl.toURI());
                 try (Stream<Path> bundledRulePaths = Files.walk(bundledRulesPath)) {
                     List<Path> jsonPaths = bundledRulePaths
@@ -87,7 +88,9 @@ public class Config {
                             .sorted()
                             .toList();
                     for (Path bundledRulePath : jsonPaths) {
-                        Path targetPath = RULES_DIRECTORY.resolve(bundledRulesPath.relativize(bundledRulePath)).normalize();
+                        // 将 union 文件系统的相对路径转换为本地路径字符串，避免跨文件系统直接拼接。
+                        String relativePath = bundledRulesPath.relativize(bundledRulePath).toString();
+                        Path targetPath = RULES_DIRECTORY.resolve(relativePath).normalize();
                         if (Files.exists(targetPath)) {
                             continue;
                         }
