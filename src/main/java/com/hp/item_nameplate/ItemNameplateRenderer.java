@@ -3,7 +3,7 @@ package com.hp.item_nameplate;
 import com.mojang.serialization.Codec;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
@@ -26,7 +26,7 @@ import net.neoforged.neoforge.client.event.RegisterItemDecorationsEvent;
 
 import java.util.regex.Pattern;
 
-@EventBusSubscriber(modid = Item_nameplate.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = Item_nameplate.MODID, value = Dist.CLIENT)
 public class ItemNameplateRenderer implements IItemDecorator {
     public static final ItemNameplateRenderer INSTANCE = new ItemNameplateRenderer();
     private static final int NAME_COLOR = 0xFFFFFF55;
@@ -42,7 +42,7 @@ public class ItemNameplateRenderer implements IItemDecorator {
     }
 
     @Override
-    public boolean render(GuiGraphics guiGraphics, Font font, ItemStack stack, int xOffset, int yOffset) {
+    public boolean render(GuiGraphicsExtractor guiGraphics, Font font, ItemStack stack, int xOffset, int yOffset) {
         if (!Config.enabled) {
             return false;
         }
@@ -58,7 +58,7 @@ public class ItemNameplateRenderer implements IItemDecorator {
         return false;
     }
 
-    private static void renderScaledLabel(GuiGraphics guiGraphics, Font font, Component line, int centerX, int topY, int color, int outlineColor, float scale) {
+    private static void renderScaledLabel(GuiGraphicsExtractor guiGraphics, Font font, Component line, int centerX, int topY, int color, int outlineColor, float scale) {
         if (line == null) {
             return;
         }
@@ -72,25 +72,24 @@ public class ItemNameplateRenderer implements IItemDecorator {
         float left = centerX - scaledWidth / 2.0F;
 
         // 使用无深度遮挡的文字渲染类型，让名称牌始终覆盖物品材质。
-        guiGraphics.flush();
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(left, topY + 1, 300.0F);
-        guiGraphics.pose().scale(scale, scale, 1.0F);
+        guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().translate(left, topY + 1);
+        guiGraphics.pose().scale(scale, scale);
         drawOutlinedText(guiGraphics, font, line, 0, 0, color, outlineColor);
-        guiGraphics.pose().popPose();
-        guiGraphics.flush();
+        guiGraphics.pose().popMatrix();
     }
 
-    private static void drawOutlinedText(GuiGraphics guiGraphics, Font font, Component line, int x, int y, int color, int outlineColor) {
-        font.drawInBatch(line, x, y - 1, outlineColor, false, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), Font.DisplayMode.SEE_THROUGH, 0, 15728880);
-        font.drawInBatch(line, x, y + 1, outlineColor, false, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), Font.DisplayMode.SEE_THROUGH, 0, 15728880);
-        font.drawInBatch(line, x - 1, y, outlineColor, false, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), Font.DisplayMode.SEE_THROUGH, 0, 15728880);
-        font.drawInBatch(line, x + 1, y, outlineColor, false, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), Font.DisplayMode.SEE_THROUGH, 0, 15728880);
-        font.drawInBatch(line, x - 1, y - 1, outlineColor, false, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), Font.DisplayMode.SEE_THROUGH, 0, 15728880);
-        font.drawInBatch(line, x + 1, y - 1, outlineColor, false, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), Font.DisplayMode.SEE_THROUGH, 0, 15728880);
-        font.drawInBatch(line, x - 1, y + 1, outlineColor, false, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), Font.DisplayMode.SEE_THROUGH, 0, 15728880);
-        font.drawInBatch(line, x + 1, y + 1, outlineColor, false, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), Font.DisplayMode.SEE_THROUGH, 0, 15728880);
-        font.drawInBatch(line, x, y, color, false, guiGraphics.pose().last().pose(), guiGraphics.bufferSource(), Font.DisplayMode.SEE_THROUGH, 0, 15728880);
+    private static void drawOutlinedText(GuiGraphicsExtractor guiGraphics, Font font, Component line, int x, int y, int color, int outlineColor) {
+        // 使用 26.1.2 的延迟文字提取接口绘制八方向描边和主体文字。
+        guiGraphics.text(font, line, x, y - 1, outlineColor, false);
+        guiGraphics.text(font, line, x, y + 1, outlineColor, false);
+        guiGraphics.text(font, line, x - 1, y, outlineColor, false);
+        guiGraphics.text(font, line, x + 1, y, outlineColor, false);
+        guiGraphics.text(font, line, x - 1, y - 1, outlineColor, false);
+        guiGraphics.text(font, line, x + 1, y - 1, outlineColor, false);
+        guiGraphics.text(font, line, x - 1, y + 1, outlineColor, false);
+        guiGraphics.text(font, line, x + 1, y + 1, outlineColor, false);
+        guiGraphics.text(font, line, x, y, color, false);
     }
 
     private static Component buildSlotLabel(ItemStack stack) {
@@ -151,7 +150,7 @@ public class ItemNameplateRenderer implements IItemDecorator {
                 if (!(current instanceof CompoundTag compound) || pathPart.index() == null || pathPart.index() >= compound.size()) {
                     return null;
                 }
-                current = net.minecraft.nbt.StringTag.valueOf(compound.getAllKeys().stream().skip(pathPart.index()).findFirst().orElse(""));
+                current = net.minecraft.nbt.StringTag.valueOf(compound.keySet().stream().skip(pathPart.index()).findFirst().orElse(""));
                 continue;
             }
             if (!(current instanceof CompoundTag compound) || !compound.contains(pathPart.key())) {
@@ -169,7 +168,7 @@ public class ItemNameplateRenderer implements IItemDecorator {
         if (!(current instanceof net.minecraft.nbt.StringTag)) {
             return null;
         }
-        String text = current.getAsString();
+        String text = current.asString().orElse("");
         String[] values = new String[]{text};
         if (source.splitSeparator() != null) {
             values = text.split(Pattern.quote(source.splitSeparator()), -1);

@@ -8,19 +8,18 @@ version = "${mod_version}"
 displayName = "${mod_name}"
 authors = "${mod_authors}"
 description = '''${mod_description}'''
-displayTest = "IGNORE_ALL_VERSION"
 
 [[mixins]]
 config = "item_nameplate.mixins.json"
 
-[[dependencies.${mod_id}]]
+[[dependencies."${mod_id}"]]
 modId = "neoforge"
 type = "required"
 versionRange = "${neo_version_range}"
 ordering = "NONE"
 side = "CLIENT"
 
-[[dependencies.${mod_id}]]
+[[dependencies."${mod_id}"]]
 modId = "minecraft"
 type = "required"
 versionRange = "${minecraft_version_range}"

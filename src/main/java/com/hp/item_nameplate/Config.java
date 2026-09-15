@@ -9,7 +9,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.neoforged.fml.config.ModConfig;
@@ -80,7 +80,18 @@ public class Config {
 
             URL bundledRulesUrl = Config.class.getClassLoader().getResource(DEFAULT_RULES_RESOURCE_DIRECTORY);
             if (bundledRulesUrl == null) {
-                LOGGER.error("Missing bundled nameplate rules directory {}", DEFAULT_RULES_RESOURCE_DIRECTORY);
+                // 部分开发环境只暴露文件资源，不暴露资源目录，因此回退读取默认规则文件。
+                URL bundledDefaultRuleUrl = Config.class.getClassLoader().getResource(DEFAULT_RULES_RESOURCE_DIRECTORY + "minecraft.json");
+                if (bundledDefaultRuleUrl == null) {
+                    LOGGER.error("Missing bundled nameplate rules directory and default rule {}", DEFAULT_RULES_RESOURCE_DIRECTORY, DEFAULT_RULES_RESOURCE_DIRECTORY + "minecraft.json");
+                } else {
+                    if (Files.notExists(DEFAULT_RULES_PATH)) {
+                        try (InputStream bundledRuleStream = bundledDefaultRuleUrl.openStream()) {
+                            Files.copy(bundledRuleStream, DEFAULT_RULES_PATH);
+                        }
+                    }
+                    LOGGER.debug("Resolved bundled default nameplate rule through individual resource fallback: {}", bundledDefaultRuleUrl);
+                }
             } else if (bundledRulesUrl.getProtocol().equals("file") || bundledRulesUrl.getProtocol().equals("union")) {
                 // 开发环境的 union URL 也提供 NIO 路径，统一按目录遍历复制内置规则。
                 Path bundledRulesPath = Path.of(bundledRulesUrl.toURI());
@@ -174,14 +185,14 @@ public class Config {
                 TagKey<Item> targetTag = null;
                 Class<? extends Item> targetClass = null;
                 if (targetType.equals("item") || targetType.equals("tag")) {
-                    ResourceLocation targetId = ResourceLocation.tryParse(targetValue);
+                    Identifier targetId = Identifier.tryParse(targetValue);
                     if (targetId == null) {
                         LOGGER.warn("Skipped nameplate rule at index {} because target.value is not a valid resource location", order);
                         order++;
                         continue;
                     }
                     if (targetType.equals("item")) {
-                        targetItem = BuiltInRegistries.ITEM.get(targetId);
+                        targetItem = BuiltInRegistries.ITEM.getValue(targetId);
                         if (targetItem == null || !BuiltInRegistries.ITEM.containsKey(targetId)) {
                             LOGGER.warn("Skipped nameplate rule at index {} because item {} does not exist", order, targetId);
                             order++;
@@ -226,13 +237,13 @@ public class Config {
                             order++;
                             continue;
                         }
-                        ResourceLocation componentId = ResourceLocation.tryParse(source.get("component").getAsString());
+                        Identifier componentId = Identifier.tryParse(source.get("component").getAsString());
                         if (componentId == null || !BuiltInRegistries.DATA_COMPONENT_TYPE.containsKey(componentId)) {
                             LOGGER.warn("Skipped nameplate rule at index {} because data component {} does not exist", order, source.get("component").getAsString());
                             order++;
                             continue;
                         }
-                        componentType = BuiltInRegistries.DATA_COMPONENT_TYPE.get(componentId);
+                        componentType = BuiltInRegistries.DATA_COMPONENT_TYPE.getValue(componentId);
                         if (componentType == null || componentType.isTransient()) {
                             LOGGER.warn("Skipped nameplate rule at index {} because data component {} is not persistent", order, componentId);
                             order++;
