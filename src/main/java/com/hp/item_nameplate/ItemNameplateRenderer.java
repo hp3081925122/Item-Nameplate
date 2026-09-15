@@ -52,7 +52,8 @@ public class ItemNameplateRenderer implements IItemDecorator {
             return false;
         }
 
-        int labelTop = yOffset + 16 - Mth.ceil((font.lineHeight + 2) * (float) Config.labelScale);
+        // 将名称牌放到槽位内部顶部，给右下角的堆叠数量留出空间。
+        int labelTop = yOffset;
         renderScaledLabel(guiGraphics, font, buildSlotLabel(stack), xOffset + 8, labelTop, NAME_COLOR, OUTLINE_COLOR, (float) Config.labelScale);
         return false;
     }
