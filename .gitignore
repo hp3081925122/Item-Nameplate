@@ -121,3 +121,6 @@ bin/
 .eclipse/
 .vscode/
 run-data/
+
+# 保留 Gradle Wrapper 启动所需的 JAR 文件。
+!gradle/wrapper/gradle-wrapper.jar
